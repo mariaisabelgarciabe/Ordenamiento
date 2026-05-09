@@ -83,6 +83,17 @@ public class DocumentosServicio {
         }
     }
 
+   public static void ordenarInsercion(int criterio) {
+    for (int i = 1; i < documentos.size(); i++) {
+        int j = i;
+
+        while (j > 0 && esMayor(documentos.get(j - 1), documentos.get(j), criterio)) {
+            intercambiar(j - 1, j);
+            j--;
+        }
+    }
+}
+
     private static int getPivote(int inicio, int fin, int criterio) {
         int pivote = inicio;
         var documentoPivote = documentos.get(pivote);

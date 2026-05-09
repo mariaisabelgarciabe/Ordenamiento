@@ -21,6 +21,7 @@ public class FrmOrdenamiento extends JFrame {
 
     private JButton btnOrdenarBurbuja;
     private JButton btnOrdenarRapido;
+    private JButton btnOrdenarInsercion;
     private JToolBar tbOrdenamiento;
     private JComboBox cmbCriterio;
     private JTextField txtTiempo;
@@ -35,6 +36,7 @@ public class FrmOrdenamiento extends JFrame {
         tbOrdenamiento = new JToolBar();
         btnOrdenarBurbuja = new JButton();
         btnOrdenarRapido = new JButton();
+        btnOrdenarInsercion = new JButton();
         cmbCriterio = new JComboBox();
         txtTiempo = new JTextField();
         btnOrdenarMezcla = new JButton();
@@ -64,6 +66,13 @@ public class FrmOrdenamiento extends JFrame {
             btnOrdenarRapidoClick(evt);
         });
         tbOrdenamiento.add(btnOrdenarRapido);
+
+        btnOrdenarInsercion.setIcon(new ImageIcon(getClass().getResource("/iconos/Ordenar.png")));
+        btnOrdenarInsercion.setToolTipText("Ordenar Insercion");
+        btnOrdenarInsercion.addActionListener(evt -> {
+            btnOrdenarInsercionClick(evt);
+        });
+        tbOrdenamiento.add(btnOrdenarInsercion);
 
         btnOrdenarMezcla.setIcon(new ImageIcon(getClass().getResource("/iconos/Ordenar.png")));
         btnOrdenarMezcla.setToolTipText("Ordenar Mezcla");
@@ -100,6 +109,29 @@ public class FrmOrdenamiento extends JFrame {
     }
 
     private boolean ejecutando;
+
+    private void btnOrdenarInsercionClick(ActionEvent evt) {
+        if (cmbCriterio.getSelectedIndex() >= 0) {
+            Util.iniciarCronometro();
+            ejecutando = true;
+
+            // Cronómetro en vivo
+            new Thread(() -> {
+                while (ejecutando) {
+                    Util.pausarMilisegundos(100);
+                    txtTiempo.setText(Util.getTextoTiempoCronometro());
+                }
+            }).start();
+
+            // Ordenamiento
+            new Thread(() -> {
+                DocumentosServicio.ordenarInsercion(cmbCriterio.getSelectedIndex());
+                ejecutando = false;
+                DocumentosServicio.mostrar(tblDocumentos);
+            }).start();
+
+        }
+    }
 
     private void btnOrdenarBurbujaClick(ActionEvent evt) {
         if (cmbCriterio.getSelectedIndex() >= 0) {
