@@ -1,6 +1,7 @@
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -16,6 +17,11 @@ import servicios.Util;
 
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
+import modelos.Documento;
 
 public class FrmOrdenamiento extends JFrame {
 
@@ -23,7 +29,7 @@ public class FrmOrdenamiento extends JFrame {
     private JButton btnOrdenarRapido;
     private JButton btnOrdenarInsercion;
     private JToolBar tbOrdenamiento;
-    private JComboBox cmbCriterio;
+    private JComboBox<String> cmbCriterio;
     private JTextField txtTiempo;
     private JButton btnBuscar;
     private JTextField txtBuscar;
@@ -31,13 +37,15 @@ public class FrmOrdenamiento extends JFrame {
 
     private JTable tblDocumentos;
 
+    private final AtomicBoolean ejecutando = new AtomicBoolean(false);
+
     public FrmOrdenamiento() {
 
         tbOrdenamiento = new JToolBar();
         btnOrdenarBurbuja = new JButton();
         btnOrdenarRapido = new JButton();
         btnOrdenarInsercion = new JButton();
-        cmbCriterio = new JComboBox();
+        cmbCriterio = new JComboBox<>();
         txtTiempo = new JTextField();
         btnOrdenarMezcla = new JButton();
 
@@ -81,7 +89,7 @@ public class FrmOrdenamiento extends JFrame {
         });
         tbOrdenamiento.add(btnOrdenarMezcla);
 
-        cmbCriterio.setModel(new DefaultComboBoxModel(
+        cmbCriterio.setModel(new DefaultComboBoxModel<>(
                 new String[] { "Nombre Completo, Tipo de Documento", "Tipo de Documento, Nombre Completo" }));
         tbOrdenamiento.add(cmbCriterio);
         tbOrdenamiento.add(txtTiempo);
@@ -89,7 +97,7 @@ public class FrmOrdenamiento extends JFrame {
         btnBuscar.setIcon(new ImageIcon(getClass().getResource("/iconos/Buscar.png")));
         btnBuscar.setToolTipText("Buscar");
         btnBuscar.addActionListener(evt -> {
-            btnBuscar(evt);
+            btnBuscarClick(evt);
         });
         tbOrdenamiento.add(btnBuscar);
         tbOrdenamiento.add(txtBuscar);
@@ -108,102 +116,76 @@ public class FrmOrdenamiento extends JFrame {
         DocumentosServicio.mostrar(tblDocumentos);
     }
 
-    private boolean ejecutando;
+    private void ejecutarOrdenamiento(int criterio, Runnable algoritmo) {
+        if (cmbCriterio.getSelectedIndex() < 0) {
+            return;
+        }
+        if (!ejecutando.compareAndSet(false, true)) {
+            return;
+        }
+        Util.iniciarCronometro();
+
+        // Cronometro en vivo
+        new Thread(() -> {
+            while (ejecutando.get()) {
+                Util.pausarMilisegundos(100);
+                SwingUtilities.invokeLater(() -> txtTiempo.setText(Util.getTextoTiempoCronometro()));
+            }
+        }).start();
+
+        // Ordenamiento
+        new Thread(() -> {
+            algoritmo.run();
+            ejecutando.set(false);
+            SwingUtilities.invokeLater(() -> DocumentosServicio.mostrar(tblDocumentos));
+        }).start();
+    }
 
     private void btnOrdenarInsercionClick(ActionEvent evt) {
-        if (cmbCriterio.getSelectedIndex() >= 0) {
-            Util.iniciarCronometro();
-            ejecutando = true;
-
-            // Cronómetro en vivo
-            new Thread(() -> {
-                while (ejecutando) {
-                    Util.pausarMilisegundos(100);
-                    txtTiempo.setText(Util.getTextoTiempoCronometro());
-                }
-            }).start();
-
-            // Ordenamiento
-            new Thread(() -> {
-                DocumentosServicio.ordenarInsercion(cmbCriterio.getSelectedIndex());
-                ejecutando = false;
-                DocumentosServicio.mostrar(tblDocumentos);
-            }).start();
-
-        }
+        ejecutarOrdenamiento(cmbCriterio.getSelectedIndex(),
+                () -> DocumentosServicio.ordenarInsercion(cmbCriterio.getSelectedIndex()));
     }
 
     private void btnOrdenarBurbujaClick(ActionEvent evt) {
-        if (cmbCriterio.getSelectedIndex() >= 0) {
-            Util.iniciarCronometro();
-            ejecutando = true;
-
-            // Cronómetro en vivo
-            new Thread(() -> {
-                while (ejecutando) {
-                    Util.pausarMilisegundos(100);
-                    txtTiempo.setText(Util.getTextoTiempoCronometro());
-                }
-            }).start();
-
-            // Ordenamiento
-            new Thread(() -> {
-                DocumentosServicio.ordenarBurbuja(cmbCriterio.getSelectedIndex());
-                ejecutando = false;
-                DocumentosServicio.mostrar(tblDocumentos);
-            }).start();
-
-        }
+        ejecutarOrdenamiento(cmbCriterio.getSelectedIndex(),
+                () -> DocumentosServicio.ordenarBurbuja(cmbCriterio.getSelectedIndex()));
     }
 
     private void btnOrdenarRapidoClick(ActionEvent evt) {
-        if (cmbCriterio.getSelectedIndex() >= 0) {
-            Util.iniciarCronometro();
-            ejecutando = true;
-
-            // Cronómetro en vivo
-            new Thread(() -> {
-                while (ejecutando) {
-                    Util.pausarMilisegundos(100);
-                    txtTiempo.setText(Util.getTextoTiempoCronometro());
-                }
-            }).start();
-
-            // Ordenamiento
-            new Thread(() -> {
-                DocumentosServicio.ordenarRapido(cmbCriterio.getSelectedIndex());
-                ejecutando = false;
-                DocumentosServicio.mostrar(tblDocumentos);
-            }).start();
-
-        }
+        ejecutarOrdenamiento(cmbCriterio.getSelectedIndex(),
+                () -> DocumentosServicio.ordenarRapido(cmbCriterio.getSelectedIndex()));
     }
 
     private void btnOrdenarMezclaClick(ActionEvent evt) {
-        if (cmbCriterio.getSelectedIndex() >= 0) {
-            Util.iniciarCronometro();
-            ejecutando = true;
-
-            // Cronómetro en vivo
-            new Thread(() -> {
-                while (ejecutando) {
-                    Util.pausarMilisegundos(100);
-                    txtTiempo.setText(Util.getTextoTiempoCronometro());
-                }
-            }).start();
-
-            // Ordenamiento por Mezcla
-            new Thread(() -> {
-                DocumentosServicio.ordenarMezcla(cmbCriterio.getSelectedIndex());
-                ejecutando = false;
-                DocumentosServicio.mostrar(tblDocumentos);
-            }).start();
-
-        }
+        ejecutarOrdenamiento(cmbCriterio.getSelectedIndex(),
+                () -> DocumentosServicio.ordenarMezcla(cmbCriterio.getSelectedIndex()));
     }
 
-    private void btnBuscar(ActionEvent evt) {
-
+    private void btnBuscarClick(ActionEvent evt) {
+        String texto = txtBuscar.getText().trim();
+        if (texto.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Ingrese texto para buscar.", "Advertencia",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        List<Documento> resultados = DocumentosServicio.buscar(texto);
+        if (resultados.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No se encontraron resultados.", "Informacion",
+                    JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        var datos = resultados.stream()
+                .map(d -> new String[] {
+                        d.getApellido1(),
+                        d.getApellido2(),
+                        d.getNombre(),
+                        d.getDocumento()
+                })
+                .collect(Collectors.toList())
+                .toArray(String[][]::new);
+        var encabezadosBusqueda = new String[] { "Primer Apellido", "Segundo Apellido", "Nombres", "Documento" };
+        var dtm = new DefaultTableModel(datos, encabezadosBusqueda);
+        tblDocumentos.setModel(dtm);
     }
 
 }
